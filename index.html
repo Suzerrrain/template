@@ -1,0 +1,1129 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Трекер расходов — офлайн</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#0f1a2e;
+      --muted:#93a4bf;
+      --text:#e7eefc;
+      --accent:#6aa6ff;
+      --danger:#ff6a7a;
+      --ok:#6cffb3;
+      --border:rgba(231,238,252,.12);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:16px;
+      --radius-sm:12px;
+      --pad:16px;
+      --pad-lg:20px;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--font);
+      background: radial-gradient(1200px 800px at 20% -10%, rgba(106,166,255,.25), transparent 55%),
+                  radial-gradient(900px 700px at 90% 10%, rgba(108,255,179,.14), transparent 60%),
+                  var(--bg);
+      color:var(--text);
+    }
+
+    a{color:var(--accent); text-decoration:none}
+    .wrap{max-width:1100px; margin:0 auto; padding:24px 16px 60px}
+    header{
+      display:flex; gap:12px; align-items:flex-end; justify-content:space-between;
+      margin-bottom:18px;
+    }
+    .title{
+      display:flex; flex-direction:column; gap:6px;
+    }
+    h1{font-size:20px; margin:0; letter-spacing:.2px}
+    .sub{color:var(--muted); font-size:13px; line-height:1.35}
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap:16px;
+      align-items:start;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns:1fr}
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding:14px var(--pad-lg);
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      border-bottom:1px solid var(--border);
+      background: rgba(0,0,0,.12);
+    }
+    .card .hd h2{margin:0; font-size:14px; letter-spacing:.2px}
+    .card .bd{padding:var(--pad-lg)}
+    .row{display:flex; gap:12px; flex-wrap:wrap}
+    .row > *{flex:1}
+
+    label{display:block; font-size:12px; color:var(--muted); margin-bottom:6px}
+    input, select, textarea, button{
+      font: inherit;
+      color: var(--text);
+      background: rgba(0,0,0,.18);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:10px 12px;
+      outline:none;
+    }
+    input::placeholder, textarea::placeholder{color:rgba(147,164,191,.7)}
+    textarea{min-height:40px; resize:vertical}
+    input:focus, select:focus, textarea:focus{border-color: rgba(106,166,255,.55); box-shadow: 0 0 0 3px rgba(106,166,255,.15)}
+    button{
+      background: linear-gradient(180deg, rgba(106,166,255,.28), rgba(106,166,255,.14));
+      cursor:pointer;
+      border-color: rgba(106,166,255,.45);
+      transition: transform .05s ease, background .2s ease;
+      white-space:nowrap;
+    }
+    button:hover{background: linear-gradient(180deg, rgba(106,166,255,.36), rgba(106,166,255,.18))}
+    button:active{transform: translateY(1px)}
+    .btn-secondary{
+      background: rgba(0,0,0,.18);
+      border-color: var(--border);
+    }
+    .btn-danger{
+      background: linear-gradient(180deg, rgba(255,106,122,.25), rgba(255,106,122,.12));
+      border-color: rgba(255,106,122,.45);
+    }
+    .btn-ghost{
+      background: transparent;
+      border-color: transparent;
+    }
+
+    .kpi{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:12px;
+    }
+    @media (max-width: 560px){
+      .kpi{grid-template-columns:1fr}
+    }
+    .kpi .box{
+      border:1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding:12px 12px;
+      background: rgba(0,0,0,.12);
+    }
+    .kpi .t{font-size:12px; color:var(--muted); margin-bottom:6px}
+    .kpi .v{font-size:18px; font-weight:700; letter-spacing:.2px}
+
+    .table-wrap{overflow:auto; border:1px solid var(--border); border-radius: var(--radius-sm)}
+    table{width:100%; border-collapse:collapse; min-width: 720px}
+    th, td{padding:10px 12px; border-bottom:1px solid var(--border); font-size:13px}
+    th{color:var(--muted); text-align:left; font-weight:600; background: rgba(0,0,0,.14); position: sticky; top:0}
+    tr:hover td{background: rgba(255,255,255,.03)}
+    td.num{text-align:right; font-variant-numeric: tabular-nums}
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:5px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.14);
+      color: var(--text);
+      font-size:12px;
+    }
+    .dot{width:8px; height:8px; border-radius:999px; background: var(--accent)}
+    .muted{color:var(--muted)}
+    .toolbar{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+    }
+    .toolbar .left, .toolbar .right{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .small{font-size:12px}
+    .hint{color:var(--muted); font-size:12px; margin-top:8px; line-height:1.35}
+
+    canvas{width:100%; height:240px; display:block; background: rgba(0,0,0,.10); border:1px solid var(--border); border-radius: var(--radius-sm)}
+    .charts{display:grid; grid-template-columns: 1fr; gap:12px}
+    .chart-title{display:flex; justify-content:space-between; align-items:center; margin:0 0 8px 0; color:var(--muted); font-size:12px}
+
+    /* modal */
+    .modal-backdrop{
+      position:fixed; inset:0; background: rgba(0,0,0,.55);
+      display:none; align-items:center; justify-content:center; padding:16px;
+    }
+    .modal{
+      width:min(560px, 100%);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .modal .hd{padding:14px 16px; border-bottom:1px solid var(--border); background: rgba(0,0,0,.14); display:flex; justify-content:space-between; align-items:center}
+    .modal .bd{padding:16px}
+    .modal .ft{padding:14px 16px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px; background: rgba(0,0,0,.10)}
+    .modal-backdrop.show{display:flex}
+    .right-align{display:flex; justify-content:flex-end}
+    .sr{position:absolute; left:-9999px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <h1>Трекер расходов</h1>
+        <div class="sub">Офлайн-приложение: данные хранятся в <span class="pill"><span class="dot"></span>localStorage</span>. Экспорт/импорт для резервных копий.</div>
+      </div>
+      <div class="right-align">
+        <button class="btn-secondary" id="btnReset" title="Очистить все данные">Сбросить данные</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Left column -->
+      <section class="card">
+        <div class="hd">
+          <h2>Добавить расход</h2>
+          <span class="small muted" id="storageInfo">—</span>
+        </div>
+        <div class="bd">
+          <form id="addForm" autocomplete="off">
+            <div class="row">
+              <div>
+                <label for="fDate">Дата</label>
+                <input id="fDate" type="date" required />
+              </div>
+              <div>
+                <label for="fAmount">Сумма</label>
+                <input id="fAmount" type="number" inputmode="decimal" step="0.01" min="0" placeholder="Напр. 12.50" required />
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:10px">
+              <div>
+                <label for="fCategory">Категория</label>
+                <select id="fCategory"></select>
+              </div>
+              <div>
+                <label for="fCustomCategory">Своя категория (опционально)</label>
+                <input id="fCustomCategory" type="text" placeholder="Напр. Транспорт" />
+              </div>
+            </div>
+
+            <div style="margin-top:10px">
+              <label for="fNote">Комментарий (опционально)</label>
+              <input id="fNote" type="text" placeholder="Напр. кофе, метро, продукты" />
+            </div>
+
+            <div class="toolbar" style="margin-top:14px">
+              <div class="left">
+                <button type="submit">Добавить</button>
+                <button type="button" class="btn-secondary" id="btnQuickToday">Сегодня</button>
+              </div>
+              <div class="right">
+                <button type="button" class="btn-secondary" id="btnExportJson">Экспорт JSON</button>
+                <button type="button" class="btn-secondary" id="btnExportCsv">Экспорт CSV</button>
+                <button type="button" class="btn-secondary" id="btnImport">Импорт</button>
+                <input class="sr" id="importFile" type="file" accept="application/json" />
+              </div>
+            </div>
+
+            <div class="hint">
+              Подсказка: для быстрого ввода используйте одну и ту же категорию и сумму — приложение запомнит последние значения.
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- Right column -->
+      <aside class="card">
+        <div class="hd">
+          <h2>Сводка и графики</h2>
+          <span class="small muted" id="monthLabel">—</span>
+        </div>
+        <div class="bd">
+          <div class="row">
+            <div>
+              <label for="filterMonth">Месяц</label>
+              <input id="filterMonth" type="month" />
+            </div>
+            <div>
+              <label for="filterCategory">Фильтр категории</label>
+              <select id="filterCategory"></select>
+            </div>
+          </div>
+          <div style="margin-top:10px">
+            <label for="filterSearch">Поиск по комментарию</label>
+            <input id="filterSearch" type="text" placeholder="Напр. метро, кофе" />
+          </div>
+
+          <div class="kpi" style="margin-top:14px">
+            <div class="box">
+              <div class="t">Всего за месяц</div>
+              <div class="v" id="kpiTotal">—</div>
+            </div>
+            <div class="box">
+              <div class="t">Среднее в день</div>
+              <div class="v" id="kpiAvg">—</div>
+            </div>
+            <div class="box">
+              <div class="t">Записей</div>
+              <div class="v" id="kpiCount">—</div>
+            </div>
+          </div>
+
+          <div class="charts" style="margin-top:14px">
+            <div>
+              <div class="chart-title">
+                <span>Расходы по дням</span>
+                <span class="small muted" id="dailyRange">—</span>
+              </div>
+              <canvas id="chartDaily" width="900" height="240" aria-label="График расходов по дням"></canvas>
+            </div>
+            <div>
+              <div class="chart-title">
+                <span>Категории</span>
+                <span class="small muted" id="topCat">—</span>
+              </div>
+              <canvas id="chartCats" width="900" height="240" aria-label="График категорий"></canvas>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Full width table -->
+      <section class="card" style="grid-column: 1 / -1;">
+        <div class="hd">
+          <h2>Записи</h2>
+          <div class="toolbar">
+            <div class="left">
+              <span class="pill"><span class="dot" id="dotState"></span><span id="stateText">Готово</span></span>
+              <span class="small muted" id="shownInfo">—</span>
+            </div>
+            <div class="right">
+              <button type="button" class="btn-secondary" id="btnClearFilters">Сбросить фильтры</button>
+            </div>
+          </div>
+        </div>
+        <div class="bd">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:120px">Дата</th>
+                  <th style="width:170px">Категория</th>
+                  <th>Комментарий</th>
+                  <th class="num" style="width:140px">Сумма</th>
+                  <th style="width:140px">Действия</th>
+                </tr>
+              </thead>
+              <tbody id="tbody">
+                <tr><td colspan="5" class="muted">Пока нет записей. Добавьте первый расход сверху.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Edit modal -->
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal">
+      <div class="hd">
+        <div>
+          <div id="modalTitle" style="font-weight:700; font-size:14px;">Редактировать запись</div>
+          <div class="small muted" id="modalSub">—</div>
+        </div>
+        <button class="btn-ghost" id="btnCloseModal" aria-label="Закрыть">✕</button>
+      </div>
+      <div class="bd">
+        <div class="row">
+          <div>
+            <label for="eDate">Дата</label>
+            <input id="eDate" type="date" required />
+          </div>
+          <div>
+            <label for="eAmount">Сумма</label>
+            <input id="eAmount" type="number" step="0.01" min="0" required />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label for="eCategory">Категория</label>
+            <select id="eCategory"></select>
+          </div>
+          <div>
+            <label for="eCustomCategory">Своя категория (опционально)</label>
+            <input id="eCustomCategory" type="text" />
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <label for="eNote">Комментарий</label>
+          <input id="eNote" type="text" />
+        </div>
+
+        <div class="hint">Если заполнить «Своя категория», она будет использована вместо выбранной.</div>
+      </div>
+      <div class="ft">
+        <button class="btn-secondary" id="btnCancelEdit">Отмена</button>
+        <button id="btnSaveEdit">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      // ---------- Utilities ----------
+      const $ = (sel, root=document) => root.querySelector(sel);
+      const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+      const STORAGE_KEY = "expense-tracker.v1";
+      const PREFS_KEY   = "expense-tracker.prefs.v1";
+
+      const DEFAULT_CATEGORIES = [
+        "Продукты", "Кафе", "Транспорт", "Дом", "Здоровье", "Развлечения", "Одежда", "Подписки", "Подарки", "Другое"
+      ];
+
+      const fmtMoney = (n) => {
+        const x = Number.isFinite(n) ? n : 0;
+        return new Intl.NumberFormat("ru-RU", { style:"currency", currency:"RUB", maximumFractionDigits: 2 }).format(x);
+      };
+
+      const isoDate = (d) => {
+        const dt = (d instanceof Date) ? d : new Date(d);
+        const y = dt.getFullYear();
+        const m = String(dt.getMonth()+1).padStart(2,"0");
+        const day = String(dt.getDate()).padStart(2,"0");
+        return `${y}-${m}-${day}`;
+      };
+
+      const monthKeyFromISO = (iso) => iso.slice(0,7); // YYYY-MM
+      const todayISO = () => isoDate(new Date());
+
+      function safeParseJSON(str, fallback){
+        try { return JSON.parse(str); } catch { return fallback; }
+      }
+
+      function downloadText(filename, text, mime="text/plain;charset=utf-8"){
+        const blob = new Blob([text], {type: mime});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function toCSV(rows){
+        const esc = (v) => {
+          const s = String(v ?? "");
+          if (/[,"\n]/.test(s)) return `"${s.replaceAll('"','""')}"`;
+          return s;
+        };
+        const header = ["date","category","note","amount"].map(esc).join(",");
+        const lines = rows.map(r => [r.date, r.category, r.note ?? "", r.amount].map(esc).join(","));
+        return [header, ...lines].join("\n");
+      }
+
+      function estimateLocalStorageUsage(){
+        // rough estimate based on serialized data size
+        const data = localStorage.getItem(STORAGE_KEY) ?? "";
+        const bytes = new Blob([data]).size;
+        const kb = bytes / 1024;
+        return kb;
+      }
+
+      // ---------- State ----------
+      let state = {
+        entries: [],          // {id, date(YYYY-MM-DD), category, note, amount}
+        categories: [...DEFAULT_CATEGORIES],
+      };
+
+      let prefs = {
+        lastAmount: "",
+        lastCategory: DEFAULT_CATEGORIES[0],
+        filterMonth: monthKeyFromISO(todayISO()),
+        filterCategory: "Все",
+        filterSearch: ""
+      };
+
+      // ---------- DOM ----------
+      const fDate = $("#fDate");
+      const fAmount = $("#fAmount");
+      const fCategory = $("#fCategory");
+      const fCustomCategory = $("#fCustomCategory");
+      const fNote = $("#fNote");
+
+      const filterMonth = $("#filterMonth");
+      const filterCategory = $("#filterCategory");
+      const filterSearch = $("#filterSearch");
+
+      const tbody = $("#tbody");
+
+      const kpiTotal = $("#kpiTotal");
+      const kpiAvg = $("#kpiAvg");
+      const kpiCount = $("#kpiCount");
+      const monthLabel = $("#monthLabel");
+      const dailyRange = $("#dailyRange");
+      const topCat = $("#topCat");
+
+      const shownInfo = $("#shownInfo");
+      const storageInfo = $("#storageInfo");
+      const dotState = $("#dotState");
+      const stateText = $("#stateText");
+
+      const chartDaily = $("#chartDaily");
+      const chartCats = $("#chartCats");
+
+      const importFile = $("#importFile");
+
+      // modal
+      const modalBackdrop = $("#modalBackdrop");
+      const btnCloseModal = $("#btnCloseModal");
+      const btnCancelEdit = $("#btnCancelEdit");
+      const btnSaveEdit = $("#btnSaveEdit");
+      const modalSub = $("#modalSub");
+      const eDate = $("#eDate");
+      const eAmount = $("#eAmount");
+      const eCategory = $("#eCategory");
+      const eCustomCategory = $("#eCustomCategory");
+      const eNote = $("#eNote");
+      let editingId = null;
+
+      // ---------- Persistence ----------
+      function load(){
+        const saved = safeParseJSON(localStorage.getItem(STORAGE_KEY), null);
+        const savedPrefs = safeParseJSON(localStorage.getItem(PREFS_KEY), null);
+
+        if (saved && Array.isArray(saved.entries)) {
+          state.entries = saved.entries
+            .filter(e => e && e.id && e.date && e.category && typeof e.amount === "number")
+            .map(e => ({...e, note: e.note ?? ""}))
+            .sort((a,b) => (a.date < b.date ? 1 : -1));
+          // categories: merge defaults + existing categories used
+          const used = new Set(state.entries.map(e => e.category));
+          state.categories = [...new Set([...DEFAULT_CATEGORIES, ...used])];
+        }
+
+        if (savedPrefs) {
+          prefs = {...prefs, ...savedPrefs};
+        }
+
+        // initial inputs
+        fDate.value = todayISO();
+        fAmount.value = prefs.lastAmount || "";
+        filterMonth.value = prefs.filterMonth || monthKeyFromISO(todayISO());
+        filterSearch.value = prefs.filterSearch || "";
+      }
+
+      function save(){
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          entries: state.entries
+        }));
+        localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+        storageInfo.textContent = `Хранилище: ~${estimateLocalStorageUsage().toFixed(1)} KB`;
+      }
+
+      function setStatus(ok, text){
+        dotState.style.background = ok ? "var(--ok)" : "var(--danger)";
+        stateText.textContent = text;
+      }
+
+      // ---------- Categories ----------
+      function rebuildCategorySelects(){
+        // Add form category list
+        const cats = [...new Set([...state.categories])].sort((a,b)=>a.localeCompare(b,"ru"));
+        state.categories = cats;
+
+        const fill = (sel, withAll) => {
+          sel.innerHTML = "";
+          if (withAll){
+            const optAll = document.createElement("option");
+            optAll.value = "Все";
+            optAll.textContent = "Все";
+            sel.appendChild(optAll);
+          }
+          for (const c of cats){
+            const opt = document.createElement("option");
+            opt.value = c;
+            opt.textContent = c;
+            sel.appendChild(opt);
+          }
+        };
+
+        fill(fCategory, false);
+        fill(eCategory, false);
+        fill(filterCategory, true);
+
+        // restore last choices
+        const pick = (sel, val, fallback) => {
+          const exists = Array.from(sel.options).some(o => o.value === val);
+          sel.value = exists ? val : fallback;
+        };
+
+        pick(fCategory, prefs.lastCategory, cats[0] || DEFAULT_CATEGORIES[0]);
+        pick(filterCategory, prefs.filterCategory, "Все");
+      }
+
+      function ensureCategory(cat){
+        const c = String(cat || "").trim();
+        if (!c) return null;
+        if (!state.categories.includes(c)) state.categories.push(c);
+        return c;
+      }
+
+      // ---------- Filtering ----------
+      function getFiltered(){
+        const month = filterMonth.value || monthKeyFromISO(todayISO());
+        const cat = filterCategory.value || "Все";
+        const q = (filterSearch.value || "").trim().toLowerCase();
+
+        prefs.filterMonth = month;
+        prefs.filterCategory = cat;
+        prefs.filterSearch = filterSearch.value || "";
+
+        let rows = state.entries.filter(e => monthKeyFromISO(e.date) === month);
+        if (cat !== "Все") rows = rows.filter(e => e.category === cat);
+        if (q) rows = rows.filter(e => (e.note || "").toLowerCase().includes(q));
+
+        return rows;
+      }
+
+      // ---------- Rendering ----------
+      function render(){
+        const month = filterMonth.value || monthKeyFromISO(todayISO());
+        monthLabel.textContent = month;
+
+        const rows = getFiltered();
+        const total = rows.reduce((s,e)=>s+e.amount, 0);
+
+        // KPIs
+        kpiTotal.textContent = fmtMoney(total);
+        kpiCount.textContent = String(rows.length);
+
+        const [y,m] = month.split("-").map(Number);
+        const daysInMonth = new Date(y, m, 0).getDate();
+        const avg = daysInMonth ? total / daysInMonth : 0;
+        kpiAvg.textContent = fmtMoney(avg);
+
+        // table
+        if (!rows.length){
+          tbody.innerHTML = `<tr><td colspan="5" class="muted">Нет записей по текущим фильтрам.</td></tr>`;
+        } else {
+          tbody.innerHTML = rows.map(e => {
+            const note = (e.note || "").trim();
+            return `
+              <tr data-id="${e.id}">
+                <td>${e.date}</td>
+                <td><span class="pill"><span class="dot" style="background:${colorForCategory(e.category)}"></span>${escapeHtml(e.category)}</span></td>
+                <td>${note ? escapeHtml(note) : `<span class="muted">—</span>`}</td>
+                <td class="num">${fmtMoney(e.amount)}</td>
+                <td>
+                  <button class="btn-secondary btnEdit" type="button">Редакт.</button>
+                  <button class="btn-danger btnDel" type="button">Удалить</button>
+                </td>
+              </tr>
+            `;
+          }).join("");
+        }
+
+        // info
+        const totalMonth = state.entries.filter(e => monthKeyFromISO(e.date) === month).reduce((s,e)=>s+e.amount,0);
+        shownInfo.textContent = `Показано: ${rows.length} из ${state.entries.filter(e => monthKeyFromISO(e.date)===month).length} (всего за месяц: ${fmtMoney(totalMonth)})`;
+
+        // charts
+        drawDailyChart(month, rows);
+        drawCatsChart(rows);
+
+        // storage
+        storageInfo.textContent = `Хранилище: ~${estimateLocalStorageUsage().toFixed(1)} KB`;
+
+        // handlers for table buttons
+        $$(".btnEdit").forEach(btn => btn.addEventListener("click", onEditClick));
+        $$(".btnDel").forEach(btn => btn.addEventListener("click", onDeleteClick));
+
+        save();
+        setStatus(true, "Готово");
+      }
+
+      function escapeHtml(s){
+        return String(s ?? "")
+          .replaceAll("&","&amp;")
+          .replaceAll("<","&lt;")
+          .replaceAll(">","&gt;")
+          .replaceAll('"',"&quot;")
+          .replaceAll("'","&#039;");
+      }
+
+      // ---------- Add ----------
+      $("#addForm").addEventListener("submit", (ev) => {
+        ev.preventDefault();
+        setStatus(true, "Сохранение…");
+
+        const date = fDate.value || todayISO();
+        const amount = Number(String(fAmount.value).replace(",", "."));
+        if (!Number.isFinite(amount) || amount <= 0){
+          setStatus(false, "Некорректная сумма");
+          fAmount.focus();
+          return;
+        }
+
+        const custom = (fCustomCategory.value || "").trim();
+        const category = ensureCategory(custom || fCategory.value);
+        const note = (fNote.value || "").trim();
+
+        const entry = {
+          id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2),
+          date,
+          category,
+          note,
+          amount: Math.round(amount * 100) / 100
+        };
+
+        state.entries.unshift(entry);
+        // prefs
+        prefs.lastAmount = String(entry.amount);
+        prefs.lastCategory = category;
+
+        // reset minimal
+        fCustomCategory.value = "";
+        fNote.value = "";
+        fAmount.value = prefs.lastAmount;
+        fCategory.value = category;
+
+        rebuildCategorySelects();
+        render();
+      });
+
+      $("#btnQuickToday").addEventListener("click", () => {
+        fDate.value = todayISO();
+        fAmount.focus();
+        fAmount.select?.();
+      });
+
+      // ---------- Filters ----------
+      filterMonth.addEventListener("change", () => render());
+      filterCategory.addEventListener("change", () => render());
+      filterSearch.addEventListener("input", debounce(() => render(), 120));
+
+      $("#btnClearFilters").addEventListener("click", () => {
+        filterMonth.value = monthKeyFromISO(todayISO());
+        filterCategory.value = "Все";
+        filterSearch.value = "";
+        render();
+      });
+
+      // ---------- Delete/Edit ----------
+      function onDeleteClick(ev){
+        const tr = ev.target.closest("tr");
+        const id = tr?.dataset?.id;
+        if (!id) return;
+
+        const entry = state.entries.find(e => e.id === id);
+        const ok = confirm(`Удалить запись?\n\n${entry?.date} • ${entry?.category} • ${fmtMoney(entry?.amount || 0)}\n${entry?.note || ""}`);
+        if (!ok) return;
+
+        state.entries = state.entries.filter(e => e.id !== id);
+        render();
+      }
+
+      function onEditClick(ev){
+        const tr = ev.target.closest("tr");
+        const id = tr?.dataset?.id;
+        if (!id) return;
+
+        const entry = state.entries.find(e => e.id === id);
+        if (!entry) return;
+
+        editingId = id;
+        modalSub.textContent = `ID: ${id.slice(0,8)}…`;
+
+        eDate.value = entry.date;
+        eAmount.value = String(entry.amount);
+        eCustomCategory.value = "";
+        eNote.value = entry.note || "";
+
+        rebuildCategorySelects();
+        eCategory.value = entry.category;
+
+        openModal();
+      }
+
+      function openModal(){
+        modalBackdrop.classList.add("show");
+        eAmount.focus();
+        eAmount.select?.();
+      }
+      function closeModal(){
+        modalBackdrop.classList.remove("show");
+        editingId = null;
+      }
+
+      btnCloseModal.addEventListener("click", closeModal);
+      btnCancelEdit.addEventListener("click", closeModal);
+      modalBackdrop.addEventListener("click", (e) => {
+        if (e.target === modalBackdrop) closeModal();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && modalBackdrop.classList.contains("show")) closeModal();
+      });
+
+      btnSaveEdit.addEventListener("click", () => {
+        if (!editingId) return;
+        const idx = state.entries.findIndex(e => e.id === editingId);
+        if (idx < 0) return;
+
+        const date = eDate.value || todayISO();
+        const amount = Number(String(eAmount.value).replace(",", "."));
+        if (!Number.isFinite(amount) || amount <= 0){
+          setStatus(false, "Некорректная сумма");
+          eAmount.focus();
+          return;
+        }
+
+        const custom = (eCustomCategory.value || "").trim();
+        const category = ensureCategory(custom || eCategory.value);
+        const note = (eNote.value || "").trim();
+
+        state.entries[idx] = {
+          ...state.entries[idx],
+          date,
+          category,
+          note,
+          amount: Math.round(amount * 100) / 100
+        };
+
+        // keep sorted newest first by date, then by insertion (approx)
+        state.entries.sort((a,b) => (a.date < b.date ? 1 : (a.date > b.date ? -1 : 0)));
+
+        rebuildCategorySelects();
+        closeModal();
+        render();
+      });
+
+      // ---------- Export / Import ----------
+      $("#btnExportJson").addEventListener("click", () => {
+        const payload = {
+          exportedAt: new Date().toISOString(),
+          version: 1,
+          entries: state.entries
+        };
+        downloadText(`expenses-${monthKeyFromISO(todayISO())}.json`, JSON.stringify(payload, null, 2), "application/json;charset=utf-8");
+      });
+
+      $("#btnExportCsv").addEventListener("click", () => {
+        // export currently filtered month for convenience
+        const rows = getFiltered().slice().reverse(); // older -> newer
+        const csv = toCSV(rows);
+        downloadText(`expenses-${filterMonth.value || monthKeyFromISO(todayISO())}.csv`, csv, "text/csv;charset=utf-8");
+      });
+
+      $("#btnImport").addEventListener("click", () => {
+        importFile.value = "";
+        importFile.click();
+      });
+
+      importFile.addEventListener("change", async () => {
+        const file = importFile.files?.[0];
+        if (!file) return;
+
+        setStatus(true, "Импорт…");
+        try{
+          const text = await file.text();
+          const obj = safeParseJSON(text, null);
+          if (!obj || !Array.isArray(obj.entries)) throw new Error("Неверный формат JSON");
+
+          const incoming = obj.entries
+            .filter(e => e && e.date && e.category && typeof e.amount === "number")
+            .map(e => ({
+              id: e.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)),
+              date: String(e.date).slice(0,10),
+              category: String(e.category),
+              note: String(e.note ?? ""),
+              amount: Math.round(Number(e.amount) * 100) / 100
+            }));
+
+          const mode = prompt(
+            "Импорт: введите 1 или 2\n1 — ДОБАВИТЬ к текущим данным\n2 — ЗАМЕНИТЬ текущие данные",
+            "1"
+          );
+
+          if (mode === "2"){
+            state.entries = incoming.sort((a,b) => (a.date < b.date ? 1 : -1));
+          } else {
+            // merge by id, prefer current if conflict
+            const byId = new Map(state.entries.map(e => [e.id, e]));
+            for (const e of incoming){
+              if (!byId.has(e.id)) byId.set(e.id, e);
+            }
+            state.entries = Array.from(byId.values()).sort((a,b) => (a.date < b.date ? 1 : -1));
+          }
+
+          // update categories
+          const used = new Set(state.entries.map(e => e.category));
+          state.categories = [...new Set([...DEFAULT_CATEGORIES, ...used])];
+
+          rebuildCategorySelects();
+          render();
+          setStatus(true, "Импорт завершён");
+        } catch(err){
+          console.error(err);
+          setStatus(false, "Ошибка импорта");
+          alert("Не удалось импортировать файл. Проверьте формат JSON (экспортируйте из этого приложения и попробуйте снова).");
+        }
+      });
+
+      // ---------- Reset ----------
+      $("#btnReset").addEventListener("click", () => {
+        const ok = confirm("Точно сбросить все данные? Это удалит все записи из localStorage.");
+        if (!ok) return;
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(PREFS_KEY);
+        state.entries = [];
+        state.categories = [...DEFAULT_CATEGORIES];
+        prefs = {
+          lastAmount: "",
+          lastCategory: DEFAULT_CATEGORIES[0],
+          filterMonth: monthKeyFromISO(todayISO()),
+          filterCategory: "Все",
+          filterSearch: ""
+        };
+        load();
+        rebuildCategorySelects();
+        render();
+      });
+
+      // ---------- Charts (pure canvas, no libs) ----------
+      function drawDailyChart(month, rows){
+        const ctx = chartDaily.getContext("2d");
+        const rect = chartDaily.getBoundingClientRect();
+        const dpr = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+        chartDaily.width = Math.floor(rect.width * dpr);
+        chartDaily.height = Math.floor(240 * dpr);
+
+        const W = chartDaily.width, H = chartDaily.height;
+        ctx.clearRect(0,0,W,H);
+
+        const [y,m] = month.split("-").map(Number);
+        const days = new Date(y, m, 0).getDate();
+        const totals = new Array(days).fill(0);
+
+        for (const e of rows){
+          const day = Number(e.date.slice(8,10));
+          if (day>=1 && day<=days) totals[day-1] += e.amount;
+        }
+
+        const maxVal = Math.max(0, ...totals);
+        const pad = 24 * dpr;
+        const baseY = H - pad;
+        const leftX = pad;
+        const rightX = W - pad;
+        const plotW = rightX - leftX;
+        const plotH = baseY - pad;
+
+        // axis
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = "rgba(231,238,252,.18)";
+        ctx.lineWidth = 1 * dpr;
+        ctx.beginPath();
+        ctx.moveTo(leftX, pad);
+        ctx.lineTo(leftX, baseY);
+        ctx.lineTo(rightX, baseY);
+        ctx.stroke();
+
+        // grid lines
+        ctx.strokeStyle = "rgba(231,238,252,.08)";
+        ctx.beginPath();
+        for (let i=1;i<=3;i++){
+          const yLine = pad + (plotH/4)*i;
+          ctx.moveTo(leftX, yLine);
+          ctx.lineTo(rightX, yLine);
+        }
+        ctx.stroke();
+
+        // bars
+        const barGap = 2 * dpr;
+        const barW = Math.max(1, Math.floor(plotW / days) - barGap);
+        for (let i=0;i<days;i++){
+          const v = totals[i];
+          const h = maxVal > 0 ? (v / maxVal) * (plotH - 2*dpr) : 0;
+          const x = leftX + i * (plotW / days) + barGap/2;
+          const yBar = baseY - h;
+
+          // bar fill (use accent, but no explicit color constants per requirement? it's internal)
+          ctx.fillStyle = "rgba(106,166,255,.45)";
+          ctx.fillRect(x, yBar, barW, h);
+
+          // highlight current day marker
+          const t = todayISO();
+          if (monthKeyFromISO(t) === month && Number(t.slice(8,10)) === i+1){
+            ctx.strokeStyle = "rgba(108,255,179,.9)";
+            ctx.lineWidth = 2 * dpr;
+            ctx.strokeRect(x, yBar, barW, h);
+          }
+        }
+
+        // labels summary
+        const nonZeroDays = totals.reduce((c,v)=>c+(v>0?1:0),0);
+        dailyRange.textContent = `${days} дней, активных: ${nonZeroDays}`;
+      }
+
+      function drawCatsChart(rows){
+        const ctx = chartCats.getContext("2d");
+        const rect = chartCats.getBoundingClientRect();
+        const dpr = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+        chartCats.width = Math.floor(rect.width * dpr);
+        chartCats.height = Math.floor(240 * dpr);
+
+        const W = chartCats.width, H = chartCats.height;
+        ctx.clearRect(0,0,W,H);
+
+        const byCat = new Map();
+        for (const e of rows){
+          byCat.set(e.category, (byCat.get(e.category)||0) + e.amount);
+        }
+        const entries = Array.from(byCat.entries()).sort((a,b)=>b[1]-a[1]);
+        const total = entries.reduce((s, [,v])=>s+v,0);
+
+        // if empty
+        if (!entries.length){
+          topCat.textContent = "—";
+          return;
+        }
+
+        const top = entries[0];
+        topCat.textContent = `топ: ${top[0]} • ${fmtMoney(top[1])}`;
+
+        // Donut chart
+        const cx = Math.floor(W * 0.18);
+        const cy = Math.floor(H * 0.52);
+        const rOuter = Math.floor(Math.min(W,H) * 0.30);
+        const rInner = Math.floor(rOuter * 0.62);
+
+        let angle = -Math.PI/2;
+        for (const [cat, val] of entries){
+          const frac = total > 0 ? (val / total) : 0;
+          const next = angle + frac * Math.PI * 2;
+
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, rOuter, angle, next);
+          ctx.closePath();
+          ctx.fillStyle = withAlpha(colorForCategory(cat), 0.55);
+          ctx.fill();
+
+          angle = next;
+        }
+
+        // inner cut
+        ctx.beginPath();
+        ctx.arc(cx, cy, rInner, 0, Math.PI*2);
+        ctx.fillStyle = "rgba(11,18,32,1)";
+        ctx.fill();
+
+        // center text
+        ctx.fillStyle = "rgba(231,238,252,.92)";
+        ctx.font = `${14*dpr}px ${getComputedStyle(document.body).fontFamily}`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("Итого", cx, cy - 8*dpr);
+        ctx.font = `${15*dpr}px ${getComputedStyle(document.body).fontFamily}`;
+        ctx.fillText(fmtMoney(total), cx, cy + 12*dpr);
+
+        // Legend (top 8)
+        const legendX = Math.floor(W * 0.38);
+        const legendY = Math.floor(H * 0.18);
+        const lineH = Math.floor(22 * dpr);
+        const maxShow = 8;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.font = `${12*dpr}px ${getComputedStyle(document.body).fontFamily}`;
+
+        entries.slice(0, maxShow).forEach(([cat,val], i) => {
+          const y = legendY + i * lineH;
+          // dot
+          ctx.fillStyle = withAlpha(colorForCategory(cat), 0.9);
+          ctx.beginPath();
+          ctx.arc(legendX, y, 5*dpr, 0, Math.PI*2);
+          ctx.fill();
+
+          // text
+          ctx.fillStyle = "rgba(231,238,252,.86)";
+          const pct = total > 0 ? Math.round((val/total)*100) : 0;
+          const text = `${cat} — ${pct}% (${fmtMoney(val)})`;
+          ctx.fillText(text, legendX + 14*dpr, y);
+        });
+
+        if (entries.length > maxShow){
+          ctx.fillStyle = "rgba(147,164,191,.9)";
+          ctx.fillText(`…и ещё ${entries.length - maxShow}`, legendX + 14*dpr, legendY + maxShow * lineH);
+        }
+      }
+
+      // deterministic category color
+      function colorForCategory(cat){
+        // hash -> HSL -> to rgba string
+        const s = String(cat);
+        let h = 0;
+        for (let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
+        const hue = h % 360;
+        const sat = 68;
+        const light = 56;
+        return `hsl(${hue} ${sat}% ${light}%)`;
+      }
+      function withAlpha(color, alpha){
+        // accepts hsl(...) -> hsla(...)
+        if (String(color).startsWith("hsl(")){
+          return color.replace("hsl(", "hsla(").replace(")", ` / ${alpha})`);
+        }
+        return color;
+      }
+
+      // ---------- Debounce ----------
+      function debounce(fn, ms){
+        let t = null;
+        return (...args) => {
+          clearTimeout(t);
+          t = setTimeout(() => fn(...args), ms);
+        };
+      }
+
+      // ---------- Boot ----------
+      function boot(){
+        load();
+
+        // set initial month
+        if (!filterMonth.value) filterMonth.value = monthKeyFromISO(todayISO());
+
+        // update categories + filter selects
+        // ensure "Все" exists for filter
+        rebuildCategorySelects();
+
+        // if user typed a search previously
+        filterSearch.value = prefs.filterSearch || "";
+        filterCategory.value = prefs.filterCategory || "Все";
+
+        // if prefs month differs
+        if (prefs.filterMonth) filterMonth.value = prefs.filterMonth;
+
+        render();
+
+        window.addEventListener("resize", debounce(() => render(), 120));
+      }
+
+      boot();
+    })();
+  </script>
+</body>
+</html>
